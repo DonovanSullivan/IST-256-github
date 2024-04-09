@@ -1,116 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-
-    <!-- Set the title of your site here -->
-    <title>Billy Bob's Burgers & Subs</title>
-
-    <meta name="author" content="mrmrs">
-    <meta name="description" content="Common HTML patterns">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!-- <link rel="stylesheet/less" type="text/css" href="styles/styles.less" />-->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stopwatch</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        #timer {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        #StartButton {
+            font-size: 18px;
+            padding: 10px 20px;
+        }
+        #summary {
+            font-size: 18px;
+            margin-top: 20px;
+        }
+    </style>
 </head>
-
 <body>
-<style>
-    .main{
-        display: flex;
-        text-align: center;
-        align-items: center;
-        justify-content: center;
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="text-center">
+                <div id="timer" class="mb-3">0 seconds</div>
+                <button id="StartButton" class="btn btn-primary btn-lg" onclick="toggleTimer()">Start</button>
+                <button id="showChart" class="btn btn-primary btn-lg" onclick="ShowChart()">Show Chart</button>
+                <div id="attemptsSummary" class="mt-4"></div>
+                <div id="overallSummary" class="mt-4"></div>
+                <canvas id="chart" width="400" height="200" class="mt-4"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+
+    const TARGET_TIME = 3;
+    let startTime, endTime;
+    let attempts = [];
+    let ChartIsShown = false;
+
+    function toggleTimer() {
+        let button = document.getElementById("StartButton");
+        if (button.textContent === "Start") {
+            startTimer();
+        } else {
+            stopTimer();
+        }
     }
 
-</style>
-<div class="container-fluid main">
+    function startTimer() {
+        startTime = new Date().getTime();
+        document.getElementById("StartButton").textContent = "Stop";
+    }
+
+    function stopTimer() {
+        endTime = new Date().getTime();
+        let elapsedTime = (endTime - startTime) / 1000;
+        let roundedTime = elapsedTime.toFixed(1);
+        document.getElementById("timer").textContent = elapsedTime.toFixed(1) + " seconds";
+        document.getElementById("StartButton").textContent = "Start";
+        let timerElement = document.getElementById("timer");
+        timerElement.textContent = elapsedTime.toFixed(1) + " seconds";
+
+        let indicationColor;
+        if (Math.abs(roundedTime - TARGET_TIME) <= 0.05) {
+            indicationColor = "green";
+        } else if (Math.abs(roundedTime - TARGET_TIME) < 0.20){
+            indicationColor = "blue";
+        } else if (Math.abs(roundedTime - TARGET_TIME) <= 0.5) {
+            indicationColor = "yellow";
+
+        } else {
+            indicationColor = "red";
+        }
+        timerElement.style.color = indicationColor;
+
+        attempts.push({
+            attemptNumber: attempts.length + 1,
+            startTime: new Date(startTime).toLocaleTimeString(),
+            stopTime: new Date(endTime).toLocaleTimeString(),
+            elapsedTime: elapsedTime.toFixed(1)
+        });
+        if(ChartIsShown == true){
+            updateAttemptsSummary();
+            updateOverallSummary();
+            updateChart();
+        }
+    }
+    function ShowChart(){
+        ChartIsShown = true;
+        updateAttemptsSummary();
+        updateOverallSummary();
+        updateChart();
+    }
+
+    function updateAttemptsSummary() {
+        let summary = "<h4>Attempts Summary:</h4>";
+        summary += "<table class='table'>";
+        summary += "<thead><tr><th>Attempt</th><th>Start Time</th><th>Stop Time</th><th>Elapsed Time</th></tr></thead>";
+        summary += "<tbody>";
+        attempts.forEach(function(attempt) {
+            summary += "<tr>";
+            summary += "<td>" + attempt.attemptNumber + "</td>";
+            summary += "<td>" + attempt.startTime + "</td>";
+            summary += "<td>" + attempt.stopTime + "</td>";
+            summary += "<td>" + attempt.elapsedTime + " seconds</td>";
+            summary += "</tr>";
+        });
+        summary += "</tbody>";
+        summary += "</table>";
+        document.getElementById("attemptsSummary").innerHTML = summary;
+    }
 
 
-    <form method="post">
+    function updateOverallSummary() {
+        let totalAttempts = attempts.length;
+        let totalElapsedTime = attempts.reduce((sum, attempt) => sum + parseFloat(attempt.elapsedTime), 0);
+        let minTime = Math.min(...attempts.map(attempt => parseFloat(attempt.elapsedTime)));
+        let maxTime = Math.max(...attempts.map(attempt => parseFloat(attempt.elapsedTime)));
+        let avgTime = (totalElapsedTime / totalAttempts).toFixed(1);
 
+        let summary = "<h4>Overall Summary:</h4>";
+        summary += "<p>Total Attempts: " + totalAttempts + "</p>";
+        summary += "<p>Minimum Elapsed Time: " + minTime.toFixed(1) + " seconds</p>";
+        summary += "<p>Maximum Elapsed Time: " + maxTime.toFixed(1) + " seconds</p>";
+        summary += "<p>Average Elapsed Time: " + avgTime + " seconds</p>";
 
+        document.getElementById("overallSummary").innerHTML = summary;
+    }
 
-        <div>
-            <h1>Billy Bob's Burgers and Subs</h1>
-            <h5>Food With Attitude</h5>
-            <br>
+    function updateChart() {
+        let labels = [];
+        let data = [];
+        attempts.forEach(function(attempt) {
+            labels.push("Attempt #" + attempt.attemptNumber);
+            data.push(parseFloat(attempt.elapsedTime));
+        });
 
+        if (typeof myChart !== 'undefined' && myChart !== null) {
+            myChart.data.labels = labels;
+            myChart.data.datasets[0].data = data;
+            myChart.update();
+        } else {
+            var ctx = document.getElementById('chart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Time (seconds)',
+                        data: data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    }
 
-
-            <label for="username">Name:</label>
-            <input type="text" name="name" id="username" placeholder="name">
-
-            <br>
-            <label for="email">Email:</label>
-            <input type="email" name="email" id="email">
-            <br>
-            <label for="password">Password:</label>
-            <input type="password" name="password" id="password">
-            <br>
-            <label for="order">Order:</label>
-            <label for="burger">Burger</label>
-            <input type="radio" name="burger" value="burger">
-            <label for="sub">Sub</label>
-            <input type="radio" name="burger" value="sub">
-            <br>
-            <label for="meat">meats: </label>
-            <select id="meat" name="meat">
-                <option value="chicken">chicken</option>
-                <option value="beef">beef</option>
-                <option value="turkey">turkey</option>
-                <option value="pastrami">pastrami</option>
-            </select>
-            <br><br>
-            <label for="toppings">Toppings</label>
-
-            <select id="toppings" name="toppings" multiple>
-                <option value="lettuce">Lettuce</option>
-                <option value="tomato">Tomato</option>
-                <option value="onion">Onion</option>
-                <option value="pickles">Pickles</option>
-            </select>
-            <p>(Tip: Hold Ctrl or Command to select more than one.)</p>
-            <br>
-            <label for="extras">Extras:</label>
-            <br>
-            <input type="checkbox" id="cheese" name="extras" value="cheese">
-            <label for="cheese">Cheese</label>
-            <input type="checkbox" id="bacon" name="extras" value="bacon">
-            <label for="bacon">Bacon</label>
-            <input type="checkbox" id="avocado" name="extras" value="avocado">
-            <label for="avocado">Avocado</label>
-            <input type="checkbox" id="Grilled" name="extras" value="Grilled">
-            <label for="Grilled">Grilled Onions</label>
-            <br>
-            <label for="sauces">Sauces:</label>
-            <br>
-            <input type="checkbox" id="Mayo" name="sauces" value="Mayo">
-            <label for="Mayo">Mayo</label>
-            <input type="checkbox" id="Mustard" name="sauces" value="Mustard">
-            <label for="Mustard">Mustard</label>
-            <input type="checkbox" id="Ketchup" name="sauces" value="Ketchup">
-            <label for="Ketchup">Ketchup</label>
-            <br>
-            <label for="comments">Comments</label>
-            <textarea name="comments" id="comments" rows="4" cols="50"></textarea>
-            <br>
-            <input type="hidden" name="userId" value="12345">
-        </div>
-        <div>
-            <input class="btn btn-primary" type="submit" value="Submit Me">
-            <input class="btn btn-secondary" type="reset" name="reset" value="Reset Form">
-        </div>
-
-    </form>
-</div>
+</script>
 </body>
-<script
-        src="https://code.jquery.com/jquery-3.7.1.min.js"
-        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
-        crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/less" ></script>
 </html>
