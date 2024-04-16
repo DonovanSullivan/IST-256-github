@@ -13,7 +13,7 @@ the colors are too harsh to look at
 Hypothesis:
 my website is easy to navigate and unterstand.
 Accept or reject your hypothesis?
-Accept.
+Accept because it is obvious where everything goes and should not provide any difficlty to a new user.
 Feedback I applied to my site:
 
 1.i made all of my products into a json file instead of making them multiple times
